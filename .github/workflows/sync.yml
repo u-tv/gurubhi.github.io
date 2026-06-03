@@ -1,9 +1,11 @@
 name: Daily Dailymotion Auto-Sync
 
 on:
+  workflow_dispatch:
+  push:
+    branches: [main]
   schedule:
     - cron: '0 0 * * *'
-  workflow_dispatch:
 
 permissions:
   contents: write
@@ -17,6 +19,7 @@ concurrency:
 jobs:
   sync-and-deploy:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -24,37 +27,34 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '24'
+          node-version: 22
           cache: npm
 
       - name: Install Dependencies
         run: npm ci
 
-      - name: Fetch Dailymotion Videos
+      - name: Sync Dailymotion Data
         run: |
           node <<'NODE'
           const fs = require('fs');
-
           const user = 'dhamtan';
           const url = `https://api.dailymotion.com/user/${user}/videos?fields=id,title,thumbnail_url&limit=100`;
 
-          async function fetchAll() {
+          async function main() {
             let allVideos = [];
             for (let page = 1; page <= 5; page++) {
               const res = await fetch(`${url}&page=${page}`);
+              if (!res.ok) throw new Error(`Fetch failed page ${page}: ${res.status}`);
               const data = await res.json();
-              if (data.list && data.list.length > 0) {
-                allVideos = allVideos.concat(data.list);
-              } else {
-                break;
-              }
+              if (!data.list || data.list.length === 0) break;
+              allVideos = allVideos.concat(data.list);
             }
             fs.mkdirSync('src/data', { recursive: true });
             fs.writeFileSync('src/data/videos.json', JSON.stringify(allVideos, null, 2));
             console.log(`Synced ${allVideos.length} videos`);
           }
 
-          fetchAll().catch(err => {
+          main().catch(err => {
             console.error(err);
             process.exit(1);
           });
@@ -76,9 +76,10 @@ jobs:
         uses: actions/configure-pages@v5
 
       - name: Upload Pages Artifact
-        uses: actions/upload-pages-artifact@v3
+        uses: actions/upload-pages-artifact@v4
         with:
           path: ./dist
 
       - name: Deploy to GitHub Pages
+        id: deployment
         uses: actions/deploy-pages@v4
