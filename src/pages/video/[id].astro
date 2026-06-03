@@ -1,19 +1,30 @@
 ---
 import videos from '../../data/videos.json';
+
 export function getStaticPaths() {
-  return videos.map((video) => ({ params: { id: video.id }, props: { video } }));
+  return videos.map((video) => ({
+    params: { id: video.id },
+    props: { video },
+  }));
 }
+
 const { video } = Astro.props;
 ---
-<html lang="hi">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>{video.title}</title>
+  <meta name="description" content={video.title} />
+  <link rel="canonical" href={`https://u-tv.github.io/gurubhi.github.io/video/${video.id}/`} />
 </head>
 <body>
-  <a href="/">← Back</a>
+  <a href="/">Back</a>
   <h1>{video.title}</h1>
-  <iframe src={`https://www.dailymotion.com/embed/video/${video.id}`} allowfullscreen style="width:100%;height:460px;border:0"></iframe>
+  <iframe
+    src={`https://www.dailymotion.com/embed/video/${video.id}`}
+    allowfullscreen
+    style="width:100%;height:460px;border:0"
+  ></iframe>
 </body>
 </html>

@@ -1,18 +1,22 @@
 ---
 import videos from '../data/videos.json';
 ---
-<html lang="hi">
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Dhamtan TV</title>
+  <title>Dhamtan TV - Latest Videos</title>
+  <meta name="description" content="Daily updated Dailymotion videos." />
+  <link rel="canonical" href="https://u-tv.github.io/gurubhi.github.io/" />
 </head>
 <body>
   <h1>Dhamtan TV</h1>
-  <div>
-    {videos?.length ? videos.map((video) => (
-      <div><a href={`/video/${video.id}`}>{video.title}</a></div>
+  <main>
+    {videos.length ? videos.map((video) => (
+      <article>
+        <a href={`/video/${video.id}`}>{video.title}</a>
+      </article>
     )) : <p>No videos found</p>}
-  </div>
+  </main>
 </body>
 </html>

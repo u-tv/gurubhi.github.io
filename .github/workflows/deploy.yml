@@ -1,12 +1,14 @@
-name: Deploy Astro Site
+name: Daily Dailymotion Auto-Sync
 
 on:
+  workflow_dispatch:
   push:
     branches: [main]
-  workflow_dispatch:
+  schedule:
+    - cron: '0 0 * * *'
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -15,26 +17,56 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  sync-build-deploy:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
+
       - run: npm ci
+
+      - name: Sync Dailymotion videos
+        run: |
+          node <<'NODE'
+          const fs = require('fs');
+          const user = 'dhamtan';
+          const url = `https://api.dailymotion.com/user/${user}/videos?fields=id,title,thumbnail_url&limit=100`;
+
+          async function main() {
+            let allVideos = [];
+            for (let page = 1; page <= 5; page++) {
+              const res = await fetch(`${url}&page=${page}`);
+              if (!res.ok) throw new Error(`Fetch failed page ${page}: ${res.status}`);
+              const data = await res.json();
+              if (!data.list || data.list.length === 0) break;
+              allVideos = allVideos.concat(data.list);
+            }
+            fs.mkdirSync('src/data', { recursive: true });
+            fs.writeFileSync('src/data/videos.json', JSON.stringify(allVideos, null, 2));
+            console.log(`Synced ${allVideos.length} videos`);
+          }
+          main().catch(err => { console.error(err); process.exit(1); });
+          NODE
+
       - run: npm run build
+
+      - name: Commit updated JSON
+        run: |
+          git config --global user.name "GitHub Actions Bot"
+          git config --global user.email "actions@github.com"
+          git add src/data/videos.json
+          git diff --cached --quiet && exit 0
+          git commit -m "Daily sync: update videos [skip ci]"
+          git push
+
+      - uses: actions/configure-pages@v5
+
       - uses: actions/upload-pages-artifact@v4
         with:
           path: ./dist
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+      - uses: actions/deploy-pages@v4
