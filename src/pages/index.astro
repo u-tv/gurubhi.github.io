@@ -3,26 +3,27 @@ import videos from '../data/videos.json';
 ---
 <html lang="hi">
 <head>
-    <meta charset="utf-8" />
-    <title>Dhamtan TV - Watch Latest Videos Online</title>
-    <meta name="description" content="Watch daily updated automated videos on Dhamtan TV." />
-    <style>
-        body { font-family: sans-serif; background: #111; color: #fff; margin: 0; padding: 20px; }
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 20px; margin-top: 20px; }
-        .card { background: #222; border: 1px solid #333; padding: 10px; border-radius: 8px; text-decoration: none; color: white; display: block; }
-        .card img { width: 100%; border-radius: 4px; height: 140px; object-fit: cover; }
-        .card h3 { font-size: 14px; margin: 10px 0 0 0; line-height: 1.4; }
-    </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Dhamtan TV - Latest Videos</title>
+  <meta name="description" content="Daily updated videos on Dhamtan TV." />
+  <style>
+    body { font-family: sans-serif; background: #111; color: #fff; margin: 0; padding: 20px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin-top: 20px; }
+    .card { background: #222; border: 1px solid #333; border-radius: 10px; overflow: hidden; text-decoration: none; color: #fff; }
+    .card img { width: 100%; height: 140px; object-fit: cover; display: block; }
+    .card h3 { font-size: 14px; margin: 10px; line-height: 1.4; }
+  </style>
 </head>
 <body>
-    <h1>Dhamtan TV - Recent Videos</h1>
-    <div class="grid">
-        {videos.map((video) => (
-            <a href={`/video/${video.id}`} class="card">
-                <img src={video.thumbnail_url} alt={video.title} />
-                <h3>{video.title}</h3>
-            </a>
-        ))}
-    </div>
+  <h1>Dhamtan TV - Recent Videos</h1>
+  <div class="grid">
+    {videos.length ? videos.map((video) => (
+      <a href={`/video/${video.id}`} class="card">
+        <img src={video.thumbnail_url} alt={video.title} />
+        <h3>{video.title}</h3>
+      </a>
+    )) : <p>No videos found yet.</p>}
+  </div>
 </body>
 </html>
