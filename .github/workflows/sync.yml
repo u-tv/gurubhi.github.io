@@ -1,0 +1,66 @@
+name: Daily Dailymotion Auto-Sync
+
+on:
+  schedule:
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+jobs:
+  sync-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Fetch 500 Videos From Dailymotion API
+        run: |
+          node -e "
+          const fs = require('fs');
+          const apiKey = '656242f6bd70036a2064'; 
+          const user = 'dhamtan';
+          const url = \`https://dailymotion.com\${user}/videos?fields=id,title,thumbnail_url&limit=100&client_id=\${apiKey}\`;
+          
+          async function fetchAll() {
+            let allVideos = [];
+            for(let page=1; page<=5; page++) {
+              try {
+                const res = await fetch(\`\${url}&page=\${page}\`);
+                const data = await res.json();
+                if(data.list && data.list.length > 0) {
+                  allVideos = allVideos.concat(data.list);
+                } else {
+                  break;
+                }
+              } catch(e) { console.error('Error fetching page ' + page); }
+            }
+            fs.writeFileSync('src/data/videos.json', JSON.stringify(allVideos, null, 2));
+            console.log('Successfully synced ' + allVideos.length + ' videos.');
+          }
+          fetchAll();
+          "
+
+      - name: Build Astro Static Pages
+        run: npm run build
+
+      - name: Commit and Push Updated Data
+        run: |
+          git config --global user.name "GitHub Actions Bot"
+          git config --global user.email "actions@github.com"
+          git add src/data/videos.json
+          git commit -m "Automated Sync: 500 Dailymotion Videos Updated [skip ci]" || exit 0
+          git push
+
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy dist --project-name=u-tv
